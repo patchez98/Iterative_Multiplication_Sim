@@ -1,0 +1,76 @@
+MAIN PSEUDOCODE START
+FUNCTION main
+  numMul <- 0
+  GET rows from "input.csv"
+  FOR sets of A & B in rows:
+    F, mulTime <- mul(A, B, 0)
+    time <- ((ceiling(numMul) / 4) * 21) + mulTime
+    print <A> * <B> = <F>
+    convert A, B, and F to hexadecimal
+    print <A> * <B> = <F>
+    print Time: <time>
+END main
+MAIN PSEUDOCODE END
+
+MULTIPLICATION PSEUDOCODE START
+FUNCTION mul
+  Pass in A, B, startTime
+  n <- length of A
+  IF n <= 4:
+    Pass out mul_4bit(A,B) and startTime
+  ELSE:
+    IF length of A not divisible by 2:
+      Zero extend both A and B once
+    m <- length of A
+
+    a <- most significant half of A
+    b <- least sigificant half of A
+    c <- most sigificant half of B
+    d <- least sigificant half of B
+
+    ac, time <- mul(a, c, startTime)
+    ad, time <- mul(a, d, startTime)
+    bc, time <- mul(b, c, startTime)
+    bd, time <- mul(b, d, startTime)
+
+    acbd <- concatenate ac & bd
+
+    F, time <- add(acbd, ad, time)
+    F, time <- add(F, bc, time)
+
+    Pass out 2n least signficant bits of F, time
+END mul
+MULTIPLICATION PSUEDOCODE END
+
+ADDITION PSEUDOCODE START
+FUNCTION add
+  Pass in largeNum, smallNum, startTime
+  n <- length of largeNum
+  WHILE length of largeNum not divisible by 4:
+    Zero extend largeNum
+  WHILE length of smallNum less than length of largeNum:
+    Zero extend smallNum
+  F, addTime = add_start(all bits left of n/4'th bit of largeNum, smallNum)
+  F <- concatenate F with least significant n/4 bits of largeNum
+  Pass out F, start + addTime
+END add
+
+FUNCTION add_start
+  Pass in A, B
+  WHILE length of A not divisible by 4:
+    Zero extend A and B
+  DEFINE G, Q as lists of length 4
+  FOR each pair of bits (aBit, bBit) in the 4 least significant bits from A and B:
+    Add aBit OR bBit to Q
+    Add aBit AND bBit to G
+  DEFINE C as a list from C[0] to C[4]
+  C[0] <- "0"
+  C[1] <- G[0]
+  C[2] <- G[1] OR (Q[1] AND G[0])
+  C[3] <- G[2] OR (Q[2] AND G[1]) OR (Q[2] AND Q[1] AND G[0])
+  C[4] <- G[3] OR (Q[3] AND C[3])
+  DEFINE F as a list from F[0] to F[3]
+  FOR each set of bits (aBit, bBit, cBit) in the 4 least sigificant bits from A, B, and C:
+    Add (aBit XOR bBit) XOR cBit to F
+  time <- 6
+  fTemp, time <- add_recursive()
