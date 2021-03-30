@@ -17,7 +17,7 @@ FUNCTION mul
   Pass in A, B, startTime
   n <- length of A
   IF n <= 4:
-    Pass out mul_4bit(A,B) and startTime
+    Return mul_4bit(A,B) and startTime
   ELSE:
     IF length of A not divisible by 2:
       Zero extend both A and B once
@@ -38,9 +38,9 @@ FUNCTION mul
     F, time <- add(acbd, ad, time)
     F, time <- add(F, bc, time)
 
-    Pass out 2n least signficant bits of F, time
+    Return 2n least signficant bits of F, time
 END mul
-MULTIPLICATION PSUEDOCODE END
+MULTIPLICATION PSEUDOCODE END
 
 ADDITION PSEUDOCODE START
 FUNCTION add
@@ -52,7 +52,7 @@ FUNCTION add
     Zero extend smallNum
   F, addTime = add_start(all bits left of n/4'th bit of largeNum, smallNum)
   F <- concatenate F with least significant n/4 bits of largeNum
-  Pass out F, start + addTime
+  Return F, start + addTime
 END add
 
 FUNCTION add_start
@@ -73,4 +73,46 @@ FUNCTION add_start
   FOR each set of bits (aBit, bBit, cBit) in the 4 least sigificant bits from A, B, and C:
     Add (aBit XOR bBit) XOR cBit to F
   time <- 6
-  fTemp, time <- add_recursive()
+  fTemp, time <- add_recursive(all but 4 least significant bits of A and B, C[4], time)
+  F <- concatenate fTemp to F
+  return F, time
+END add_start
+
+FUNCTION add_recursive
+  Pass in A, B, carryIn, startTime
+  IF length of A is 0:
+    return "", startTime
+  DEFINE G, Q as lists of length 4
+  FOR each pair of bits (aBit, bBit) in the 4 least significant bits from A and B:
+    Add aBit OR bBit to Q
+    Add aBit AND bBit to G
+  DEFINE C0, C1 as lists of indexes 0 to 4
+  C0[0] <- "0"
+  C0[1] <- G[0]
+  C0[2] <- G[1] OR (Q[1] AND G[0])
+  C0[3] <- G[2] OR (Q[2] AND G[1]) OR (Q[2] AND Q[1] AND G[0])
+  C0[4] <- G[3] OR (Q[3] AND C0[3])
+  DEFINE F0 as a list from F0[0] to F0[3]
+  FOR each set of bits (aBit, bBit, cBit) in the 4 least sigificant bits from A, B, and C0:
+    Add (aBit XOR bBit) XOR cBit to F0
+  C1[0] <- "1"
+  C1[1] <- G[0]
+  C1[2] <- G[1] OR (Q[1] AND G[0])
+  C1[3] <- G[2] OR (Q[2] AND G[1]) OR (Q[2] AND Q[1] AND G[0])
+  C1[4] <- G[3] OR (Q[3] AND C1[3])
+  DEFINE F1 as a list from F1[0] to F1[3]
+  FOR each set of bits (aBit, bBit, cBit) in the 4 least sigificant bits from A, B, and C1:
+    Add (aBit XOR bBit) XOR cBit to F1
+  DEFINE F as a list from F[0] to F[3]
+  IF carryIn is "0":
+    F <- F0
+    carryOut <- C0[4]
+  ELSE:
+    F <- F1
+    carryOut <- C1[4]
+  time <- startTime + 2
+  fTemp, time <- add_recursive(all but 4 least significant bits of A and B, carryOut, time)
+  F <- concatenate fTemp to F
+  return F, time
+END add_recursive
+ADDITION PSEUDOCODE END

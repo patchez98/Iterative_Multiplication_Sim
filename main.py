@@ -1,36 +1,38 @@
 import csv
 from math import ceil
 
-num_mul = 0
+numMul = 0
+numAdd = 0
 
 def main():
-  global num_mul
-  # Create array to hold inputs and outputs
-  output = []
+  global numMul
+  global numAdd
   # Read csv file
   with open("input.csv") as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',')
     for row in csvreader:
-      num_mul = 0
+      numMul = 0
+      numAdd = 0
       A, B = row
-      F, time = mul(A, B, 0)
-      output += [[A, B, F, time + int(ceil(num_mul/4) * 21)]]
+      F, mulTime = mul(A, B, 0)
       print(f"<---------->"
             f"\nBinary: {A} * {B} = {F}"
             f"\nHex: {hex(int(A, 2))} * {hex(int(B, 2))} = {hex(int(F, 2))}"
-            f"\nTime: {time + int(ceil(num_mul/4) * 21)}t"
-            f"\n{'Good' if mul_test(A, B, F) else 'Bad'}")
+            f"\nTime: {mulTime + int(ceil(numMul/4) * 21)}t"
+            f"\nn: {len(A)}"
+            f"\nMultiplications: {numMul}"
+            f"\nAdditions: {numAdd}")
 
 '''
 Multiplies two n-bit unsigned binary numbers together
   using the wonders of recursion
 Returns as [F, Time Elapsed]
 '''
-def mul(A: str, B: str, start: int):
+def mul(A: str, B: str, startTime: int):
   n = len(A)
   # End recursion at basic building block (4-bit numbers)
   if n <= 4:
-    return [mul_4bit(A, B), start]
+    return [mul_4bit(A, B), startTime]
   # Zero extend numbers until they can be divided into 2 parts
   while len(A) % 2 != 0:
     A = '0' + A
@@ -48,7 +50,7 @@ def mul(A: str, B: str, start: int):
   b = A[int(m/2):]
   c = B[:int(m/2)]
   d = B[int(m/2):]
-  (ac, time) = mul(a, c, start)
+  (ac, time) = mul(a, c, startTime)
   ad = mul(a, d, time)[0]
   bc = mul(b, c, time)[0]
   bd = mul(b, d, time)[0]
@@ -67,7 +69,9 @@ Adds numbers of lengths n and n/2,
 Time: 6t + 2((n/4)-1)t
 Return as [large + small<<n/2, Finish Time]
 '''
-def add(large: str, small: str, start: int):
+def add(large: str, small: str, startTime: int):
+  global numAdd
+  numAdd += 1
   n = len(large)
   # Check that sizes are correct
   if n/2 != len(small):
@@ -82,7 +86,7 @@ def add(large: str, small: str, start: int):
 
   # Add small in middle of large
   (f, fTime) = add_start(large[:-(int(n/4))], small)
-  return [(f + large[-(int(n/4)):])[-n:], start + fTime]
+  return [(f + large[-(int(n/4)):])[-n:], startTime + fTime]
   
 '''
 Adds two 4-bit numbers with a CLA1 to speed up this addition
@@ -147,10 +151,10 @@ def add_start(A: str, B: str):
     F = bin_xor(F_temp, C_bit) + F
   
   # Add rest of the bits
-  (temp_f, temp_fTime) = add_recursive(A[:-4], B[:-4], C[4], 6)
+  (temp_f, fTime) = add_recursive(A[:-4], B[:-4], C[4], 6)
 
   # Return value as [F, Time F Completed]
-  return [temp_f + F, temp_fTime]
+  return [temp_f + F, fTime]
 
 '''
 Recursive 4-bit addition using CLA1 and Carry Select
@@ -281,9 +285,9 @@ def add_recursive(A: str, B: str, Cin: str, Cin_time: int):
     Out_time = Cin_time + 2
 
     # Add next 4 bits (if they exist)
-    (temp_f, temp_fTime) = add_recursive(A[:-4], B[:-4], Cout, Out_time)
+    (temp_f, Out_time) = add_recursive(A[:-4], B[:-4], Cout, Out_time)
 
-    return [temp_f + F, temp_fTime]
+    return [temp_f + F, Out_time]
 
 
 '''
@@ -298,8 +302,8 @@ Time: 21t
 '''
 def mul_4bit(int1: str, int2: str):
   # Keep track of number of mul_4bit calls for time calculations
-  global num_mul
-  num_mul += 1
+  global numMul
+  numMul += 1
   # Convert to integers
   multiplier = int(int1, 2)
   multiplicand = int(int2, 2)
@@ -312,20 +316,6 @@ def mul_4bit(int1: str, int2: str):
   while(len(output) < len(int1) * 2):
     output = '0' + output
   return output
-
-'''
-Tester function to check multiplication against correct answer
-'''
-def mul_test(int1: str, int2: str, F: str):
-  # Convert to integers
-  multiplier = int(int1, 2)
-  multiplicand = int(int2, 2)
-  # Multiply numbers
-  output = bin(multiplier * multiplicand)[2:]
-  # Zero extend to reach desired length
-  while(len(output) < len(int1) * 2):
-    output = '0' + output
-  return F == output
 
 '''
 Binary Gate function definitions
@@ -348,11 +338,4 @@ Multiplexes two inputs based on the third input bit, C
 def mux(A: str, B: str, C: str):
   return A if C == '0' else B
 
-#print(add_start('0111', '1010', 15))
-#print(add('1101110011011100', '11011100', 0))
-#F, time = mul('011101010', '010001100', 0)
-#print(f"F: {F}")
-#print(f"Time: {time}")
-#print(f"{num_mul} 4-bit multiplications")
-#print(f"Total: {time + int(num_mul*21/4)}")
 main()
